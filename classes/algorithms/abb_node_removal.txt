@@ -1,0 +1,35 @@
+def abb_append_subtree(tree_a_root, tree_b_root):
+	if tree_b_root is null:
+		return null
+
+	tmp_subtree = tree_a_root.right
+	tree_a_root.right = tree_b_root
+	abb_append_subtree(tree_a_root, tmp_subtree)
+
+
+def abb_node_removal(parent, node):
+	if parent.left == node:
+		if node.left is null and node.right is null:
+			parent.left = null
+		
+		if node.left is null:
+			parent.left = node.right
+
+		if node.right is null:
+			parent.left = node.left
+		
+		parent.left = node.left
+		abb_append_subtree(parent, node.right)
+			
+	else if parent.right == node:
+		if node.left is null and node.right is null:
+			parent.right = null
+		
+		if node.left is null:
+			parent.right = node.right
+
+		if node.right is null:
+			parent.right= node.left
+		
+		parent.right = node.left
+		abb_append_subtree(parent, node.right)
