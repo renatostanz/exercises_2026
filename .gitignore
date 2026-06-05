@@ -45,3 +45,6 @@
 
 # notations
 **/notations/
+
+# python cache
+**/__pycache__/
