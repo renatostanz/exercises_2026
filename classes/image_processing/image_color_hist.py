@@ -1,7 +1,6 @@
 # The user can get an RGB color histogram from this script
 
-# To execute this script the user must add into its command line arguments the image path.
-# If they want, they can also choose the histogram color by adding it as a command line argument.
+# To execute this script the user must execute it with its image path as a command line argument.
 
 import matplotlib.pyplot as plt
 import sys
@@ -10,7 +9,8 @@ import cv2 as cv
 from numpy import array, asarray
 
 
-def check_img_path(path: str | os.PathLike) -> bool:
+def get_img_path() -> str:
+    path = sys.argv[-1]
     if not os.path.exists(path):
         raise FileNotFoundError(f"No such file: {path}")
 
@@ -19,12 +19,8 @@ def check_img_path(path: str | os.PathLike) -> bool:
 
     if not has_valid_extensions(img_extensions):
         raise TypeError(f"The selected file must contain a valid image extension. Such as: {', '.join(img_extensions[:-1])}, {img_extensions[-1]}")
-    return True
 
-
-def get_argv() -> str | os.PathLike:
-    check_img_path(sys.argv[-1])
-    return sys.argv[-1]
+    return path
     
 
 class Histogram():
@@ -100,7 +96,7 @@ class Histogram():
 
 
 if __name__ == "__main__":
-    img_path = get_argv()
+    img_path = get_img_path()
 
     hist = Histogram(img_path)
     hist.show_img()
