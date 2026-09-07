@@ -9,35 +9,8 @@ import os
 import cv2 as cv
 from numpy import array, asarray
 
-def get_hist(img: array):
-    hist = [0 for i in range(256)]
 
-    for line in img[:]:
-        for pixel in line:
-            hist[pixel] += 1
-
-    return hist
-
-
-def show_hist(img: array, color: str):
-    hist = get_hist(img)
-
-    hist_fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
-    ax.plot([i for i, _ in enumerate(hist)], hist, color=color, linewidth=2, label=f'{color.capitalize()} Pixels Count')
-    ax.set_title(f'{color.capitalize()} Histogram')
-    ax.grid(True)
-    ax.legend()
-
-    hist_fig.canvas.draw()
-    hist_rgba = asarray(hist_fig.canvas.buffer_rgba())
-    hist_bgr = cv.cvtColor(hist_rgba, cv.COLOR_RGBA2BGR)
-
-    plt.close(hist_fig)
-
-    cv.imshow(f"{color.capitalize()} Histogram", hist_bgr)
-
-    
-def check_img_path(path: str) -> bool:
+def check_img_path(path: str | os.PathLike) -> bool:
     if not os.path.exists(path):
         raise FileNotFoundError(f"No such file: {path}")
 
@@ -49,33 +22,83 @@ def check_img_path(path: str) -> bool:
     return True
 
 
-def get_argv() -> list[str, str | None]:
-    if sys.argv[-1].lower() not in ["red", "blue", "green"]:
-        check_img_path(sys.argv[-1])
-        return [sys.argv[-1].lower(), None]
+def get_argv() -> str | os.PathLike:
+    check_img_path(sys.argv[-1])
+    return sys.argv[-1]
+    
 
-    check_img_path(sys.argv[-2])
-    return [i.lower() for i in sys.argv[-2:]]
+class Histogram():
+    def __init__(self, img_path: str | os.PathLike) -> None:
+        try:
+            img = cv.imread(img_path)
+        except:
+            raise IOError("The image path you provided didn't fit the opencv criteria.")
+
+        self.set_img(img)
+
+
+    def set_img(self, new_img) -> None:
+        self.img = new_img
+        img_height, img_width = self.img.shape[:2]
+        self.upper_bound = img_height * img_width
+
+
+    def show_img(self) -> None:
+        cv.imshow("Original Image", self.img)
+
+
+    @staticmethod
+    def get_hist(img: array) -> list[int]:
+        hist = [0 for i in range(256)]
+
+        for line in img[:]:
+            for pixel in line:
+                hist[pixel] += 1
+
+        return hist
+
+
+    def show_hist(self, img: array, color: str) -> None:
+        hist = self.get_hist(img)
+
+        hist_fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
+        ax.plot(hist, color=color, linewidth=2, label=f'{color.capitalize()} Pixels Count')
+        ax.set_xlim(0, 255)
+        ax.set_ylim(0, self.upper_bound)
+        ax.set_xlabel("Intensity")
+        ax.set_ylabel("Count")
+        ax.set_title(f'{color.capitalize()} Histogram')
+        ax.grid(True)
+        ax.legend()
+
+        hist_fig.canvas.draw()
+        hist_rgba = asarray(hist_fig.canvas.buffer_rgba())
+        hist_bgr = cv.cvtColor(hist_rgba, cv.COLOR_RGBA2BGR)
+
+        plt.close(hist_fig)
+
+        cv.imshow(f"{color.capitalize()} Histogram", hist_bgr)
+
+
+    @staticmethod
+    def wait_and_clear() -> None:
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+        
+
+    def show_rgb_hists(self) -> None:
+        rgb_img = cv.cvtColor(self.img, cv.COLOR_BGR2RGB)
+        rgb_channels = cv.split(rgb_img)
+
+        for rgb_channel, color in zip(rgb_channels, ['red', 'blue', 'green']):
+            self.show_hist(rgb_channel, color)
+
+        self.wait_and_clear()
 
 
 if __name__ == "__main__":
-    img_path, color = get_argv()
-    img = cv.imread(img_path)
-    img_resized = cv.resize(img, (960, 540))
-    cv.imshow("Original Image Rezised", img_resized)
-    rgb_img = cv.cvtColor(img_resized, cv.COLOR_BGR2RGB)
+    img_path = get_argv()
 
-    if not color:
-        color = input("Choose a color to plot a histogram: ").lower()
-
-    rgb_channels = cv.split(rgb_img)
-    single_color_img = rgb_channels[0]
-    if color == "green":
-        single_color_img = rgb_channels[1]
-    elif color == "blue":
-        single_color_img = rgb_channels[2]
-
-    show_hist(single_color_img, color)
-
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    hist = Histogram(img_path)
+    hist.show_img()
+    hist.show_rgb_hists()
