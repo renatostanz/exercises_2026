@@ -40,20 +40,23 @@ class Histogram():
     def set_img(self, new_img) -> None:
         self.img = new_img
         img_height, img_width = self.img.shape[:2]
-        self.upper_bound = img_height * img_width
+        self.upper_bound = 0
 
 
     def show_img(self) -> None:
         cv.imshow("Original Image", self.img)
 
 
-    @staticmethod
-    def get_hist(img: array) -> list[int]:
+    def get_hist(self, img: array) -> list[int]:
         hist = [0 for i in range(256)]
 
         for line in img[:]:
             for pixel in line:
                 hist[pixel] += 1
+
+        max_count = max(hist)
+        if self.upper_bound * 1.05 < max_count:
+            self.upper_bound = max_count * 1.05
 
         return hist
 
