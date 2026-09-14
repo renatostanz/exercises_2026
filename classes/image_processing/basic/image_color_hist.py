@@ -1,7 +1,3 @@
-# The user can get an RGB color histogram from this script
-
-# To execute this script the user must execute it with its image path as a command line argument.
-
 from utils import get_img_path, Histogram
 
 
