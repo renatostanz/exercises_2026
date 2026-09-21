@@ -3,7 +3,7 @@ import cv2 as cv
 import os
 
 from numpy import ndarray
-from utils import load_rgb_img, path_check, is_pixel_colored_check, get_pixel_color_sum
+from utils import load_rgb_img, path_check, is_pixel_colored 
 
 class LineClassifier:
     def __init__(self, path: str | os.PathLike | None) -> None:
@@ -33,14 +33,14 @@ class LineClassifier:
         for row in range(number_of_rows):
             for col in range(number_of_columns):
                 pixel = rgb_img[row, col]
-                if not is_pixel_colored_check(pixel):
+                if not is_pixel_colored(pixel):
                     continue
 
-                if is_pixel_colored_check(rgb_img[row, col+1]):
+                if is_pixel_colored(rgb_img[row, col+1]):
                     return "horizontal"
-                elif is_pixel_colored_check(rgb_img[row+1, col]):
+                elif is_pixel_colored(rgb_img[row+1, col]):
                     return "vertical"
-                elif is_pixel_colored_check(rgb_img[row+1, col+1]):
+                elif is_pixel_colored(rgb_img[row+1, col+1]):
                     return "diagonal"
                 return "point"
 
