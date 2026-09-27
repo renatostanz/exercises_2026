@@ -1,3 +1,6 @@
+from numpy import ndarray
+from time import sleep
+
 import pyvista as pv
 
 class Alligator:
@@ -18,33 +21,34 @@ class Alligator:
         self.arm_radius: float = 1.25
 
     def create_core(self) -> pv.PolyData:
-        center = tuple(i/2 for i in self.core_dimensions)
+        center = (self.core_dimensions[0] / 2, self.core_dimensions[1] / 6, self.core_dimensions[2] / 2)
         body = pv.Cube(
             center = center, 
             x_length = self.core_dimensions[0], 
-            y_length = self.core_dimensions[1], 
+            y_length = self.core_dimensions[1] / 3, 
             z_length = self.core_dimensions[2]
         )
-        body.translate(center, inplace=True)
+        translation = (center[0], 7 * self.core_dimensions[1] / 6, center[2])
+        body.translate(translation, inplace=True)
         return body
 
 
     def place_limb(
         self,
-        geometry: pv.PolyData, 
+        limb: pv.PolyData, 
         rot_deg_xyz: tuple[float, float, float] = (0, 0, 0), 
         translation=(0, 0, 0)
     ) -> pv.PolyData:
 
         if rot_deg_xyz[0] != 0:
-            geometry.rotate_x(rot_deg_xyz[0], inplace=True)
+            limb.rotate_x(rot_deg_xyz[0], inplace=True)
         if rot_deg_xyz[1] != 0:
-            geometry.rotate_y(rot_deg_xyz[1], inplace=True)
+            limb.rotate_y(rot_deg_xyz[1], inplace=True)
         if rot_deg_xyz[2] != 0:
-            geometry.rotate_z(rot_deg_xyz[2], inplace=True)
+            limb.rotate_z(rot_deg_xyz[2], inplace=True)
         
-        geometry.translate(translation, inplace=True)
-        return geometry
+        limb.translate(translation, inplace=True)
+        return limb
 
 
     def create_legs(self) -> tuple[pv.PolyData, pv.PolyData]:
@@ -65,14 +69,14 @@ class Alligator:
 
         leg = pv.merge([foot, leg])
 
-        delta_z = 3*self.core_dimensions[2] / 5 - (self.foot_height + self.thigh_height)
-        delta_y = 5*self.core_dimensions[1]/4
-        left_translation = (4*self.core_dimensions[0]/3, delta_y, delta_z)
-        right_translation = (2*self.core_dimensions[0]/5, delta_y, delta_z)
+        delta_z = self.core_dimensions[2] / 2 - (self.foot_height + self.thigh_height)
+        delta_y = 5 * self.core_dimensions[1] / 4
+        right_translation = (4 * self.core_dimensions[0] / 3, delta_y, delta_z)
+        left_translation = (2 * self.core_dimensions[0] / 5, delta_y, delta_z)
 
         return (
-            self.place_limb(translation=left_translation, rot_deg_xyz=(15, 0, -15), geometry=leg.copy()),
-            self.place_limb(translation=right_translation, rot_deg_xyz=(15, 0, 15), geometry=leg),
+            self.place_limb(translation=right_translation, rot_deg_xyz=(15, 0, -15), limb=leg.copy()),
+            self.place_limb(translation=left_translation, rot_deg_xyz=(15, 0, 15), limb=leg),
         )
 
 
@@ -87,16 +91,20 @@ class Alligator:
 
         delta_z = 3 * self.core_dimensions[2] / 2 - self.arm_radius 
         delta_y = self.core_dimensions[1] + self.arm_radius / 2
-        left_translation = (7*self.core_dimensions[0]/4, delta_y, delta_z)
-        right_translation = (2*self.core_dimensions[0]/7, delta_y, delta_z)
+        right_delta_x = 3 * self.core_dimensions[0] / 2 + self.arm_height / 3
+        left_delta_x = self.core_dimensions[0] / 2 - self.arm_height / 3
+
+        right_translation = (right_delta_x, delta_y, delta_z)
+        left_translation = (left_delta_x, delta_y, delta_z)
+
         return (
-            self.place_limb(translation=left_translation, rot_deg_xyz=(0, -90, 0), geometry=arm.copy()),
-            self.place_limb(translation=right_translation, rot_deg_xyz=(0, 90, 0), geometry=arm),
+            self.place_limb(translation=right_translation, rot_deg_xyz=(0, -90, 45), limb=arm.copy()),
+            self.place_limb(translation=left_translation, rot_deg_xyz=(0, 90, -45), limb=arm),
         )
 
 
     def create_tail(self) -> pv.PolyData:
-        cone_center = (self.tail_radius / 2, self.tail_radius / 2, 3 * self.tail_height / 2)
+        cone_center = (self.tail_radius / 2, self.tail_radius / 2, self.tail_height / 2)
         tail = pv.Cone(
             height = self.tail_height, 
             radius = self.tail_radius, 
@@ -105,9 +113,70 @@ class Alligator:
         )
 
         delta_x = self.core_dimensions[0] - self.tail_radius
-        translation = (delta_x, 3 * self.core_dimensions[1] / 2,  3 * self.core_dimensions[2] / 4)
-        return self.place_limb(translation=translation, rot_deg_xyz=(120, 0, 00), geometry=tail)
+        translation = (delta_x, 4 * self.core_dimensions[1] / 7,  self.core_dimensions[2] / 2 + self.tail_radius)
+        return self.place_limb(translation=translation, rot_deg_xyz=(120, 0, 00), limb=tail)
 
+
+    def create_back(self) -> pv.PolyData:
+        
+        center = (self.core_dimensions[0] / 2, self.core_dimensions[1] / 3, 3 * self.core_dimensions[2] / 4)
+        back = pv.Cube(
+            center = center, 
+            x_length = self.core_dimensions[0], 
+            y_length = 2 * self.core_dimensions[1] / 3, 
+            z_length = 3 * self.core_dimensions[2] / 2
+        )
+
+        traslation = (self.core_dimensions[0] / 2, self.core_dimensions[1] / 2, self.core_dimensions[2] / 2)
+        back.translate(traslation, inplace=True)
+
+        return back
+
+
+    def create_mouth(self) -> pv.PolyData:
+        center = (self.core_dimensions[0] / 2, self.core_dimensions[1] / 3, self.core_dimensions[2] / 12)
+        chin = pv.Cube(
+            center = center, 
+            x_length = self.core_dimensions[0], 
+            y_length = 2 * self.core_dimensions[1] / 3, 
+            z_length = self.core_dimensions[2] / 6
+        )
+
+        center = (self.core_dimensions[0] / 2, self.core_dimensions[1] / 3 + self.core_dimensions[2] / 6, self.core_dimensions[2] / 12)
+        nose = pv.Cube(
+            center = center, 
+            x_length = self.core_dimensions[0], 
+            y_length = 2 * self.core_dimensions[1] / 3 + self.core_dimensions[2] / 3, 
+            z_length = self.core_dimensions[2] / 6
+        )
+        nose.rotate_x(45, inplace=True)
+
+        mouth = pv.merge([chin, nose])
+
+        traslation = (self.core_dimensions[0] / 2, 7 * self.core_dimensions[1] / 6, 3 * self.core_dimensions[2] / 2 - self.core_dimensions[2] / 12)
+        mouth.translate(traslation, inplace=True)
+
+        return mouth
+
+def dance(point: ndarray) -> None:
+    number_of_frames = 30
+
+    for f in range(number_of_frames):
+        i = 1
+        if f < number_of_frames // 2:
+            i *= -1
+
+        left_arm.rotate_x(i, inplace=True)
+        right_arm.rotate_z(-i, inplace=True)
+
+        if f < 10 or f >= number_of_frames - 11:
+            right_leg.rotate_z(-i, inplace=True)
+        left_leg.rotate_z(i, inplace=True)
+
+        tail.rotate_z(-i, inplace=True)
+
+        plotter.render()
+        sleep(0.02)
 
 
 plotter = pv.Plotter()
@@ -117,15 +186,29 @@ core = hostigator.create_core()
 right_leg, left_leg = hostigator.create_legs()
 right_arm, left_arm = hostigator.create_arms()
 tail = hostigator.create_tail()
+back = hostigator.create_back()
+mouth = hostigator.create_mouth()
 
-plotter.add_mesh(core, color=[250, 250, 30], label="Body")
-plotter.add_mesh(left_leg, color=[0, 0, 230], label="Left Foot")
-plotter.add_mesh(right_leg, color=[0, 0, 230], label="Right Foot")
-plotter.add_mesh(left_arm, color=[0, 0, 230], label="Left Arm")
-plotter.add_mesh(right_arm, color=[0, 0, 230], label="Right Arm")
-plotter.add_mesh(tail, color=[0, 0, 230], label="Tail")
+blue = [0, 0, 230]
+yellow = [250, 250, 30]
+
+plotter.add_mesh(core, color = yellow, label = "Body")
+plotter.add_mesh(left_leg, color = blue, label = "Left Foot")
+plotter.add_mesh(right_leg, color = blue, label = "Right Foot")
+plotter.add_mesh(left_arm, color = blue, label = "Left Arm")
+plotter.add_mesh(right_arm, color = blue, label = "Right Arm")
+plotter.add_mesh(tail, color = blue, label = "Tail")
+plotter.add_mesh(back, color = blue, label = "Back")
+plotter.add_mesh(mouth, color = yellow, label = "Back")
 
 plotter.add_axes(interactive=True, line_width=3)
-plotter.show_grid()
+#plotter.show_grid()
+
+plotter.enable_point_picking(
+    callback=dance,
+    show_point=False,
+    left_clicking=True,
+    show_message="Click in the Hostigator to make it dance!"
+)
 
 plotter.show()
