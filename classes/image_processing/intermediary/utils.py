@@ -9,6 +9,12 @@ def load_rgb_img(path: str | os.PathLike) -> ndarray:
     return cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
 
+def load_gray_img(path: str | os.PathLike) -> ndarray:
+    print(f"   Loading image ({path})")
+    img = cv.imread(path)
+    return cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+
 def path_check(path: str | os.PathLike | None) -> bool:
     if path != None and os.path.exists(path):
         return True
