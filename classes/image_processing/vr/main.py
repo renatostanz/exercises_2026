@@ -1,5 +1,29 @@
-from alligator import Alligator, dance
+from alligator import Alligator
+from numpy import ndarray
+from time import sleep
+
+
 import pyvista as pv
+
+def dance(point: ndarray) -> None:
+    number_of_frames = 30
+
+    for f in range(number_of_frames):
+        i = 1
+        if f < number_of_frames // 2:
+            i *= -1
+
+        left_arm.rotate_x(i, inplace=True)
+        right_arm.rotate_z(-i, inplace=True)
+
+        if f < 10 or f >= number_of_frames - 11:
+            right_leg.rotate_z(-i, inplace=True)
+        left_leg.rotate_z(i, inplace=True)
+
+        tail.rotate_z(-i, inplace=True)
+
+        plotter.render()
+        sleep(0.02)
 
 if __name__ == "__main__":
     plotter = pv.Plotter()
